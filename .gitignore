@@ -1,0 +1,5 @@
+# ignore database files
+*.db
+
+# ignore txt-files
+*.txt
