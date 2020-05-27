@@ -43,3 +43,11 @@ def tables():
     )""")
     conn.commit()
     conn.close()
+
+
+def names(args: list):
+    joined = ' '.join(args)
+    names = joined.split(",")
+    for i in range(len(names)):
+        names[i] = names[i].strip()
+    return names
