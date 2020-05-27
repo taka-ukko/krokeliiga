@@ -3,3 +3,6 @@
 
 # ignore txt-files
 *.txt
+
+# ignore pycache folder
+__pycache__
