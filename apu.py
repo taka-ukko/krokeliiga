@@ -1,12 +1,9 @@
-from telegram import ReplyKeyboardMarkup
 import sqlite3
 
 db_path = r"C:\Users\veikk\projektit\krokeliiga\tilastot.db"
 token_path = r'C:\Users\veikk\projektit\krokeliiga\token.txt'
 perm_path = r'C:\Users\veikk\projektit\krokeliiga\luvat.txt'
 customKeyboard = [['Ensimmäinen', 'Toinen'], ['Kolmas', 'Pääsi maaliin'], ['Peruuta']]
-markup = ReplyKeyboardMarkup(customKeyboard, one_time_keyboard=True,
-                             resize_keyboard=True)
 SCORES = range(1)
 
 
@@ -41,6 +38,12 @@ def tables():
         pisteet INT,
         PRIMARY KEY (ukko, pv, kuu)
     )""")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS Kroket (
+        pv INT,
+        kuu INT,
+        PRIMARY KEY (pv, kuu)
+    )""")
     conn.commit()
     conn.close()
 
@@ -51,3 +54,31 @@ def names(args: list):
     for i in range(len(names)):
         names[i] = names[i].strip()
     return names
+
+
+def switch(placement: int):
+    switcher = {
+        1: 4,
+        2: 3,
+        3: 2,
+        range(4, 10): 1
+    }
+    return switcher.get(placement)
+
+
+def botM(update, context, message: str):
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text=message)
+
+
+def piste(update, context, name: str, pisteet: int):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    ins = """
+        INSERT INTO Tapahtumat
+        VALUES (?, ?, ?, ?)
+    """
+    date = update.message.date
+    cursor.execute(ins, (name, date.day, date.month, pisteet))
+    conn.commit()
+    conn.close()

@@ -1,9 +1,7 @@
-from telegram.ext import (Updater, CommandHandler, ConversationHandler,
-                          MessageHandler, Filters)
+from telegram.ext import (Updater, CommandHandler)
 import logging
 import apu
-from callback import (eka, toka, kolmas, muu, start, uusi, maksu, sijoitus,
-                      peruuta)
+from callback import (start, uusi, maksu, sijoitus, kroke, help, tulokset)
 
 logging.basicConfig(format="""%(asctime)s - %(name)s - %(levelname)s -
                     %(message)s""",
@@ -18,21 +16,18 @@ def main():
     start_handler = CommandHandler('start', start)
     uusi_handler = CommandHandler('uusi', uusi)
     maksu_handler = CommandHandler('maksu', maksu)
-    sij_handler = ConversationHandler(
-        entry_points=[CommandHandler("sijoitus", sijoitus)],
-        states={
-            apu.SCORES: [MessageHandler(Filters.regex('^(Ensimmäinen)$'), eka),
-                         MessageHandler(Filters.regex('^(Toinen)$'), toka),
-                         MessageHandler(Filters.regex('^(Kolmas)$'), kolmas),
-                         MessageHandler(Filters.regex('^(Pääsi maaliin)$'), muu)]
-        },
-        fallbacks=[MessageHandler(Filters.regex('^(Peruuta)$'), peruuta)]
-    )
+    kroke_handler = CommandHandler('kroke', kroke)
+    sij_handler = CommandHandler("sijoitus", sijoitus)
+    help_handler = CommandHandler("help", help)
+    tul_handler = CommandHandler("tulokset", tulokset)
     # handlers to dispatchers
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(uusi_handler)
     dispatcher.add_handler(maksu_handler)
     dispatcher.add_handler(sij_handler)
+    dispatcher.add_handler(kroke_handler)
+    dispatcher.add_handler(help_handler)
+    dispatcher.add_handler(tul_handler)
     updater.start_polling()
     updater.idle()
 
