@@ -3,8 +3,6 @@ import sqlite3
 db_path = r"C:\Users\veikk\projektit\krokeliiga\tilastot.db"
 token_path = r'C:\Users\veikk\projektit\krokeliiga\token.txt'
 perm_path = r'C:\Users\veikk\projektit\krokeliiga\luvat.txt'
-customKeyboard = [['Ensimmäinen', 'Toinen'], ['Kolmas', 'Pääsi maaliin'], ['Peruuta']]
-SCORES = range(1)
 
 
 def permit(id: int):
