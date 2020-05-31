@@ -59,7 +59,12 @@ def switch(placement: int):
         1: 4,
         2: 3,
         3: 2,
-        range(4, 10): 1
+        4: 1,
+        5: 1,
+        6: 1,
+        7: 1,
+        8: 1,
+        9: 1,
     }
     return switcher.get(placement)
 

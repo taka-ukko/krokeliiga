@@ -33,6 +33,10 @@ def help(update, context):
              "parametriksi joukkueiden lukumäärä ja sen jälkeen pelaajien nimet "
              "pilkulla erotettuna.\n"
              "(esim. /joukkueet 4, Timppa, Tomppa)\n\n"
+             "/osakilpailut komennolla voit tarkastella osakilpailuja, jotka on "
+             "lisätty tietokantaan. Tulosteeseen on merkitty onko yksittäinen "
+             "kilpailu jo suoritettu, vai vasta tulossa.\n"
+             "(esim. /osakilpailut)\n\n"
              "".format(yes))
     apu.botM(update, context,
              "Komennot jotka vaativat luvan {}\n\n"  # ------------
@@ -41,8 +45,12 @@ def help(update, context):
              "(esim. /uusi Timppa, Tomppa)\n\n"
              "/maksu komennolla voit päivittää henkilön liiga-maksun tilan.\n"
              "(esim. /maksu Timppa, Tomppa)\n\n"
-             "/kroke komennolla voit lisätä kyseisen päivän tietokantaan.\n"
-             "(esim. /kroke)\n\n"
+             "/kroke komennolla voit lisätä osakilpailun tietokantaan. Ajamalla "
+             "komennon ilman parametrejä, lisää komento tämän päivän "
+             "osakilpaluksi. Jos komennolle antaa parametriksi päivämäärän "
+             "muodossa dd.mm, tekee se osakilpilun kyseiselle päivälle.\n"
+             "(esim. /kroke)\n"
+             "(esim. /kroke 6.9)\n\n"
              "/sijoitus komennolla voit lisätä pelaajille sijotuksen "
              "osakilpailussa. Jotta sijoituksen voi lisätä, on kyseinen päivä "
              "oltava lisätty aiemmin /kroke komennolla. Lisäksi pelaajien on "
@@ -56,6 +64,13 @@ def help(update, context):
              "Anna ensimmäiseksi parametriksi vanha nimi ja toiseksi parametriksi "
              "uusi nimi.\n"
              "(esim. /nimi Timppa, Tomppa)\n\n"
+             "/piste komennolla voit lisätä tai muuttaa yksittäisen pelaajan "
+             "tietoja eri osakilpailuista. Jos pelaajalla ei ole vielä "
+             "merkintää halutun päivän osakilpailussa, lisätään uusi tulos. "
+             "Muussa tapauksessa vanhaa tulosta muutetaan. Ensimmäinen parametri "
+             "on päivämäärä muodossa dd.mm, toinen parametri on pelaajan nimi ja "
+             "kolmas parametri on sijoitus.\n"
+             "(esim. /piste 6.9, Timppa, 1)\n\n"
              "".format(no))
 
 
@@ -145,19 +160,69 @@ def kroke(update, context):
                                  text="Sinulla ei ole oikeuksia lisätä uusia "
                                       "osakilpailuita.")
         return
-    date = update.message.date
-    conn = sqlite3.connect(apu.db_path)
-    cursor = conn.cursor()
-    ins = """
-        INSERT INTO Kroket
-        SELECT ?, ?
-        WHERE NOT EXISTS(SELECT 1 FROM Kroket WHERE pv = ? AND kuu = ?)
-    """
-    cursor.execute(ins, (date.day, date.month, date.day, date.month))
-    conn.commit()
-    conn.close()
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Osakilpailu lisätty tietokantaan")
+    names = apu.names(context.args)
+    if names[0] == '':
+        date = update.message.date
+        pv = date.day
+        kuu = date.month
+        conn = sqlite3.connect(apu.db_path)
+        cursor = conn.cursor()
+        sel = """
+            SELECT *
+            FROM Kroket
+            WHERE pv = ? AND kuu = ?
+        """
+        ins = """
+            INSERT INTO Kroket
+            VALUES(?, ?)
+        """
+        cursor.execute(sel, (pv, kuu))
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            cursor.execute(ins, (pv, kuu))
+            apu.botM(update, context,
+                     "Osakilpailu lisätty tietokantaan.")
+            conn.commit()
+        else:
+            apu.botM(update, context,
+                     "Osakilpailu on jo tietokannassa.")
+        conn.close()
+    elif len(names) == 1:
+        pvm = names[0].split(".")
+        if not len(pvm) == 2:
+            apu.botM(update, context,
+                     "Anna parametriksi päivämäärä, jolle haluat "
+                     "lisätä osakilpailun, muodossa dd.mm")
+            return
+        if not pvm[0].isdigit() or not pvm[1].isdigit():
+            apu.botM(update, context,
+                     "Anna parametriksi päivämäärä dd.mm, jolle haluat lisätä "
+                     "osakilpailun.")
+            return
+        pv = int(pvm[0])
+        kuu = int(pvm[1])
+        conn = sqlite3.connect(apu.db_path)
+        cursor = conn.cursor()
+        sel = """
+            SELECT *
+            FROM Kroket
+            WHERE pv = ? AND kuu = ?
+        """
+        ins = """
+            INSERT INTO Kroket
+            VALUES(?, ?)
+        """
+        cursor.execute(sel, (pv, kuu))
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            cursor.execute(ins, (pv, kuu))
+            apu.botM(update, context,
+                     "Osakilpailu lisätty tietokantaan.")
+            conn.commit()
+        else:
+            apu.botM(update, context,
+                     "Osakilpailu on jo tietokannassa.")
+        conn.close()
 
 
 # -----------------------------------SIJOITUS-----------------------------------
@@ -408,7 +473,7 @@ def poista(update, context):
                  "Pelaaja poistettu tietokannasta.")
 
 
-# -----------------------------------MUUTA--------------------------------------
+# -----------------------------------NIMI---------------------------------------
 def nimi(update, context):
     user = update.effective_user.id
     if not apu.permit(user):
@@ -447,6 +512,14 @@ def nimi(update, context):
                  "voitu muuttaa.")
         conn.close()
         return
+    cursor.execute(sel1, (names[1],))
+    rows = cursor.fetchall()
+    if not len(rows) == 0:
+        apu.botM(update, context,
+                 "Tietokannassa on jo henkilö, jonka nimi on sama kuin "
+                 "parametriksi annettu uusi nimi. Nimeä ei muutettu.")
+        conn.close()
+        return
     cursor.execute(upd1, (names[1], names[0]))
     cursor.execute(upd2, (names[1], names[0]))
     conn.commit()
@@ -454,21 +527,123 @@ def nimi(update, context):
     apu.botM(update, context,
              "Pelaajan nimi muutettu.")
 
-# -----------------------------------MUUTA--------------------------------------
-# def muuta(update, context):
-#     user = update.effective_user.id
-#     if not apu.permit(user):
-#         context.bot.send_message(chat_id=update.effective_chat.id,
-#                                  text="Sinulla ei ole oikeuksia poistaa "
-#                                  "henkilöitä tietokannasta")
-#         return
-#     names = apu.names(context.args)
-#
-#
-#     if names[0] == '':
-#         apu.botM(update, context,
-#                  "Katso /help komennosta ohjeet kuinka käyttää tätä komentoa")
-#         return
+
+# -----------------------------------PISTE--------------------------------------
+def piste(update, context):
+    user = update.effective_user.id
+    if not apu.permit(user):
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text="Sinulla ei ole oikeuksia poistaa "
+                                 "henkilöitä tietokannasta")
+        return
+    names = apu.names(context.args)
+    if names[0] == '' or not len(names) == 3:
+        apu.botM(update, context,
+                 "Anna ensimmäiseksi parametriksi päivämäärä, jolle haluat "
+                 "lisätä tai muuttaa pisteet ja toiseksi paramatriksi henkilön, "
+                 "jolle tämä muutos tehdään. Anna kolmanneksi parametriksi "
+                 "uusi sijoitus.")
+        return
+    pvm = names[0].split(".")
+    if not len(pvm) == 2:
+        apu.botM(update, context,
+                 "Anna ensimmäiseksi parametriksi päivämäärä, jolle haluat "
+                 "lisätä tai muuttaa pisteet, muodossa dd.mm")
+        return
+    if not pvm[0].isdigit() or not pvm[1].isdigit() or not names[2].isdigit():
+        apu.botM(update, context,
+                 "Anna ensimmäiseksi parametriksi päivämäärä dd.mm, jolle haluat "
+                 "lisätä tai muuttaa pisteet. Anna kolmanneksi parametriksi "
+                 "uusi sijoitus.")
+        return
+    if int(names[2]) not in range(1, 10):
+        apu.botM(update, context,
+                 "Anna sijoitus, joka on välillä [1,9].")
+        return
+    pv = int(pvm[0])
+    kuu = int(pvm[1])
+    name = names[1]
+    sij = int(names[2])
+    p = apu.switch(sij)
+    conn = sqlite3.connect(apu.db_path)
+    cursor = conn.cursor()
+    sel1 = """
+        SELECT *
+        FROM Tapahtumat
+        WHERE ukko = ? AND pv = ? AND kuu = ?
+    """
+    sel2 = """
+        SELECT *
+        FROM Kroket
+        WHERE pv = ? AND kuu = ?
+    """
+    upd1 = """
+        UPDATE Tapahtumat
+        SET pisteet = ?
+        WHERE ukko = ? AND pv = ? AND kuu = ?
+    """
+    ins1 = """
+        INSERT INTO Tapahtumat
+        VALUES(?, ?, ?, ?)
+    """
+    cursor.execute(sel1, (name, pv, kuu))
+    rows1 = cursor.fetchall()
+    cursor.execute(sel2, (pv, kuu))
+    rows2 = cursor.fetchall()
+    if len(rows1) == 0 and len(rows2) == 1:
+        cursor.execute(ins1, (name, pv, kuu, p))
+        conn.commit()
+        apu.botM(update, context,
+                 "Henkilöllä ei ollut vielä merkintää kyseisen päivän "
+                 "osakilpailusta, joten se lisättiin.")
+    elif len(rows1) > 0 and len(rows2) == 1:
+        cursor.execute(upd1, (p, name, pv, kuu))
+        conn.commit()
+        apu.botM(update, context,
+                 "Henkilön sijoitus osakilpilussa muutettu onnistuneesti")
+    else:
+        apu.botM(update, context,
+                 "Kyseiselle päivälle ei ole lisätty osakilpailua. Komennolla "
+                 "/kroke dd.mm voit lisätä osakilpailun tietylle päivälle.")
+        return
+    conn.close()
+
+
+# -----------------------------------OSAKILPAILUT-------------------------------
+def osakilpailut(update, context):
+    conn = sqlite3.connect(apu.db_path)
+    cursor = conn.cursor()
+    sel = """
+        SELECT *
+        FROM Kroket
+        ORDER BY kuu, pv
+    """
+    cursor.execute(sel)
+    rows = cursor.fetchall()
+    conn.close()
+    date = update.message.date
+    pv = date.day
+    kuu = date.month
+    today = emojize(":100:", use_aliases=True)
+    old = emojize(":white_check_mark:", use_aliases=True)
+    new = emojize(":clock9:", use_aliases=True)
+    res = """```
+Osakilpailut:
+=============
+Tila Pvm
+"""
+    for r in rows:
+        m = old
+        if r[0] == pv and r[1] == kuu:
+            m = today
+        elif r[1] > kuu or (r[1] == kuu and r[0] > pv):
+            m = new
+        res = res + """
+{}      {}.{}""".format(m, r[0], r[1])
+    res = res + "```"
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text=res,
+                             parse_mode=telegram.ParseMode.MARKDOWN)
 
 
 # -----------------------------------JOUKKUEET----------------------------------

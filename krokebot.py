@@ -2,7 +2,7 @@ from telegram.ext import (Updater, CommandHandler)
 import logging
 import apu
 from callback import (start, uusi, maksu, sijoitus, kroke, help, tulokset,
-                      pelaajat, poista, joukkueet, nimi)
+                      pelaajat, poista, joukkueet, nimi, piste, osakilpailut)
 
 logging.basicConfig(format="""%(asctime)s - %(name)s - %(levelname)s -
                     %(message)s""",
@@ -25,6 +25,8 @@ def main():
     poista_handler = CommandHandler("poista", poista)
     joukk_handler = CommandHandler("joukkueet", joukkueet)
     nimi_handler = CommandHandler("nimi", nimi)
+    piste_handler = CommandHandler("piste", piste)
+    osa_handler = CommandHandler("osakilpailut", osakilpailut)
     # handlers to dispatchers
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(help_handler)
@@ -37,6 +39,8 @@ def main():
     dispatcher.add_handler(poista_handler)
     dispatcher.add_handler(joukk_handler)
     dispatcher.add_handler(nimi_handler)
+    dispatcher.add_handler(piste_handler)
+    dispatcher.add_handler(osa_handler)
     updater.start_polling()
     updater.idle()
 
