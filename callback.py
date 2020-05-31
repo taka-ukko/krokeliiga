@@ -83,6 +83,11 @@ def uusi(update, context):
                                       "henkilöitä tietokantaan")
         return
     names = apu.names(context.args)
+    if names[0] == '':
+        apu.botM(update, context,
+                 "Anna parametriksi pelaajan nimi, jonka haluat lisätä "
+                 "tietokantaan. Jos haluat lisätä useamman pelaajan kerralla, "
+                 "erota nimet pilkulla.")
     conn = sqlite3.connect(apu.db_path)
     cursor = conn.cursor()
     ins = """
