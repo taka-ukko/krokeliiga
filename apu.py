@@ -1,8 +1,10 @@
 import sqlite3
+from os import path
+pa = path.dirname(path.abspath(__file__))
 
-db_path = r"C:\Users\veikk\projektit\krokeliiga\tilastot.db"
-token_path = r'C:\Users\veikk\projektit\krokeliiga\token.txt'
-perm_path = r'C:\Users\veikk\projektit\krokeliiga\luvat.txt'
+token_path = path.join(pa, "token.txt")
+perm_path = path.join(pa, "luvat.txt")
+db_path = path.join(pa, "tilastot.db")
 
 
 def permit(id: int):
