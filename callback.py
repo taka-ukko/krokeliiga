@@ -16,6 +16,7 @@ def start(update, context):
 def help(update, context):
     no = emojize(":skull_and_crossbones:", use_aliases=True)
     yes = emojize(":yum:", use_aliases=True)
+    user = update.effective_user.id
     apu.botM(update, context,
              "Komennot jotka eivät vaadi lupaa {}\n\n"  # ------------
              "/tulokset komennolla voit tarkastella sijoituksia kesäliigassa. "
@@ -38,6 +39,8 @@ def help(update, context):
              "kilpailu jo suoritettu, vai vasta tulossa.\n"
              "(esim. /osakilpailut)\n\n"
              "".format(yes))
+    if not apu.permit(user):
+        return
     apu.botM(update, context,
              "Komennot jotka vaativat luvan {}\n\n"  # ------------
              "/uusi komennolla voit lisätä uusia pelaajia tietokantaan. "
@@ -83,11 +86,12 @@ def uusi(update, context):
                                       "henkilöitä tietokantaan")
         return
     names = apu.names(context.args)
-    if names[0] == '':
+    if '' in names:
         apu.botM(update, context,
                  "Anna parametriksi pelaajan nimi, jonka haluat lisätä "
                  "tietokantaan. Jos haluat lisätä useamman pelaajan kerralla, "
                  "erota nimet pilkulla.")
+        return
     conn = sqlite3.connect(apu.db_path)
     cursor = conn.cursor()
     ins = """
@@ -113,10 +117,11 @@ def maksu(update, context):
                                  "pelaajien liigamaksun tilaa.")
         return
     names = apu.names(context.args)
-    if names[0] == '':
+    if '' in names:
         apu.botM(update, context,
-                 "Anna argumentiksi vähintään yksi henkilö, jonka haluat "
-                 "merkitä maksaneeksi.")
+                 "Anna argumentiksi vähintään yksi pelaaja, jonka haluat "
+                 "merkitä maksaneeksi. Jos haluat merkitä useamman pelaajan "
+                 "kerralla, erota nimet pilkulla.")
         return
     conn = sqlite3.connect(apu.db_path)
     cursor = conn.cursor()
@@ -245,6 +250,10 @@ def sijoitus(update, context):
                                  "ja tämän jälkeen henkilöt jotka saavuttivat "
                                  "kyseisen sijan. Ertota parametrit pilkulla.")
         return
+    if '' in names:
+        apu.botM(update, context,
+                 "Syöte on viallinen.")
+        return
     place = int(names[0])
     points = apu.switch(place)
     names = names[1:]
@@ -261,6 +270,11 @@ def sijoitus(update, context):
         FROM Kroket
         WHERE pv = ? AND kuu = ?
     """
+    sel3 = """
+        SELECT *
+        FROM Maksut
+        WHERE nimi = ?
+    """
     cursor.execute(sel2, (date.day, date.month))
     rows = cursor.fetchall()
     if len(rows) == 0:
@@ -268,6 +282,18 @@ def sijoitus(update, context):
                                  text="Tälle päivälle ei ole tallennettu"
                                  "osakilpailua. Komennolla /kroke voit lisätä"
                                  "tälle päivälle osakilpailun.")
+        conn.close()
+        return
+    notin = []
+    for name in names:
+        cursor.execute(sel3, (name,))
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            notin.append(name)
+    if len(notin) > 0:
+        apu.botM(update, context,
+                 "Pelaajia {} ei ole lisätty tietokantaan. Lisää heidät ensin "
+                 "komennolla /uusi.".format(notin))
         conn.close()
         return
     added = []
@@ -487,7 +513,7 @@ def nimi(update, context):
                                  "muuttaapelaajien nimiä")
         return
     names = apu.names(context.args)
-    if names[0] == '' or not len(names) == 2:
+    if '' in names or not len(names) == 2:
         apu.botM(update, context,
                  "Anna 1. argumentiksi yhden pelaajan nimi, jonka haluat "
                  "muuttaa ja 2. argumentiksi uusi nimi.")
@@ -542,7 +568,7 @@ def piste(update, context):
                                  "henkilöitä tietokannasta")
         return
     names = apu.names(context.args)
-    if names[0] == '' or not len(names) == 3:
+    if '' in names or not len(names) == 3:
         apu.botM(update, context,
                  "Anna ensimmäiseksi parametriksi päivämäärä, jolle haluat "
                  "lisätä tai muuttaa pisteet ja toiseksi paramatriksi henkilön, "
