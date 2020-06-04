@@ -3,6 +3,7 @@ import apu
 import telegram
 from emoji import emojize
 import random
+from datetime import datetime
 
 
 # -----------------------------------START--------------------------------------
@@ -94,18 +95,40 @@ def uusi(update, context):
         return
     conn = sqlite3.connect(apu.db_path)
     cursor = conn.cursor()
+    sel = """
+        SELECT *
+        FROM Maksut
+        WHERE nimi = ?
+    """
     ins = """
         INSERT INTO Maksut
-        SELECT ?, ?
-        WHERE NOT EXISTS(SELECT 1 FROM Maksut WHERE nimi = ?)
+        VALUES (?, ?)
     """
+    added = []
+    notadded = []
     for name in names:
-        cursor.execute(ins, (name, 0, name))
-    conn.commit()
+        name = name.lower()
+        cursor.execute(sel, (name,))
+        rows = cursor.fetchall()
+        if len(rows) == 1:
+            added.append(name)
+        else:
+            notadded.append(name)
+            cursor.execute(ins, (name, 0))
+    if len(added) == 0:
+        conn.commit()
+        apu.botM(update, context,
+                 "Henkilö(t) lisätty onnistuneesti tietokantaan")
+    elif len(notadded) == 0:
+        apu.botM(update, context,
+                 "Kaikki parametriksi annetut pelaajat ovat jo valmiiksi lisätty "
+                 "tietokantaan.")
+    else:
+        conn.commit()
+        apu.botM(update, context,
+                 "Henkilö(t) {} lisätty tietokantaan. Loput pelaajista olivat jo "
+                 "valmiiksi tietokannassa.".format(notadded))
     conn.close()
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Henkilö(t) lisätty onnistuneesti "
-                             "tietokantaan")
 
 
 # -----------------------------------MAKSU--------------------------------------
@@ -133,6 +156,7 @@ def maksu(update, context):
     added = []
     notadded = []
     for name in names:
+        name = name.lower()
         cursor.execute(sel, (name,))
         rows = cursor.fetchall()
         if len(rows) == 0:
@@ -171,25 +195,24 @@ def kroke(update, context):
                                       "osakilpailuita.")
         return
     names = apu.names(context.args)
+    sel = """
+        SELECT *
+        FROM Kroket
+        WHERE pvm = ?
+    """
+    ins = """
+        INSERT INTO Kroket
+        VALUES(?)
+    """
     if names[0] == '':
-        date = update.message.date
-        pv = date.day
-        kuu = date.month
+        now = datetime.now()
+        pvm = now.strftime("%m%d")
         conn = sqlite3.connect(apu.db_path)
         cursor = conn.cursor()
-        sel = """
-            SELECT *
-            FROM Kroket
-            WHERE pv = ? AND kuu = ?
-        """
-        ins = """
-            INSERT INTO Kroket
-            VALUES(?, ?)
-        """
-        cursor.execute(sel, (pv, kuu))
+        cursor.execute(sel, (pvm,))
         rows = cursor.fetchall()
         if len(rows) == 0:
-            cursor.execute(ins, (pv, kuu))
+            cursor.execute(ins, (pvm,))
             apu.botM(update, context,
                      "Osakilpailu lisätty tietokantaan.")
             conn.commit()
@@ -209,23 +232,15 @@ def kroke(update, context):
                      "Anna parametriksi päivämäärä dd.mm, jolle haluat lisätä "
                      "osakilpailun.")
             return
-        pv = int(pvm[0])
-        kuu = int(pvm[1])
+        pv = pvm[0]
+        kuu = pvm[1]
+        pvm = apu.fdate(kuu, pv)
         conn = sqlite3.connect(apu.db_path)
         cursor = conn.cursor()
-        sel = """
-            SELECT *
-            FROM Kroket
-            WHERE pv = ? AND kuu = ?
-        """
-        ins = """
-            INSERT INTO Kroket
-            VALUES(?, ?)
-        """
-        cursor.execute(sel, (pv, kuu))
+        cursor.execute(sel, (pvm, ))
         rows = cursor.fetchall()
         if len(rows) == 0:
-            cursor.execute(ins, (pv, kuu))
+            cursor.execute(ins, (pvm,))
             apu.botM(update, context,
                      "Osakilpailu lisätty tietokantaan.")
             conn.commit()
@@ -257,25 +272,26 @@ def sijoitus(update, context):
     place = int(names[0])
     points = apu.switch(place)
     names = names[1:]
-    date = update.message.date
+    now = datetime.now()
+    pvm = now.strftime("%m%d")
     conn = sqlite3.connect(apu.db_path)
     cursor = conn.cursor()
     sel1 = """
         SELECT *
         FROM Tapahtumat
-        WHERE ukko = ? AND pv = ? AND kuu = ?
+        WHERE ukko = ? AND pvm = ?
     """
     sel2 = """
         SELECT *
         FROM Kroket
-        WHERE pv = ? AND kuu = ?
+        WHERE pvm = ?
     """
     sel3 = """
         SELECT *
         FROM Maksut
         WHERE nimi = ?
     """
-    cursor.execute(sel2, (date.day, date.month))
+    cursor.execute(sel2, (pvm,))
     rows = cursor.fetchall()
     if len(rows) == 0:
         context.bot.send_message(chat_id=update.effective_chat.id,
@@ -286,6 +302,7 @@ def sijoitus(update, context):
         return
     notin = []
     for name in names:
+        name = name.lower()
         cursor.execute(sel3, (name,))
         rows = cursor.fetchall()
         if len(rows) == 0:
@@ -299,10 +316,11 @@ def sijoitus(update, context):
     added = []
     notadded = []
     for name in names:
-        cursor.execute(sel1, (name, date.day, date.month))
+        name = name.lower()
+        cursor.execute(sel1, (name, pvm))
         rows = cursor.fetchall()
         if len(rows) == 0:
-            apu.piste(update, context, name, points)
+            apu.piste(update, context, name, points, pvm)
             added.append(name)
         else:
             notadded.append(name)
@@ -342,16 +360,16 @@ def tulokset(update, context):
                       ORDER BY -SUM(pisteet)
                       LIMIT 10
                       )
-                    Union
-                select distinct a.ukko, maksu, pisteet
+                    UNION
+                SELECT DISTINCT a.ukko, maksu, pisteet
                 FROM(
                     SELECT t1.ukko, max(t1.pisteet+ t2.pisteet + t3.pisteet) as pisteet
                     FROM Tapahtumat AS t1, Tapahtumat AS t2, Tapahtumat AS t3
                     WHERE t1.ukko = t2.ukko
                         AND t3.ukko = t2.ukko
-                        AND t1.kuu * 100 + t1.pv != t2.kuu * 100 + t2.pv
-                        AND t1.kuu * 100 + t1.pv != t3.kuu * 100 + t3.pv
-                        AND t3.kuu * 100 + t3.pv != t2.kuu * 100 + t2.pv
+                        AND t1.pvm != t2.pvm
+                        AND t1.pvm != t3.pvm
+                        AND t3.pvm != t2.pvm
                     GROUP BY t1.ukko
                     ) AS a, Maksut
                 WHERE nimi = a.ukko
@@ -368,7 +386,7 @@ def tulokset(update, context):
         res = """```
 Kymmenen parasta pelaajaa:
 ==========================
-Pisteet Maksu Nimi
+Pisteet Tila Nimi
 """
         for r in rows:
             m = yes
@@ -378,7 +396,7 @@ Pisteet Maksu Nimi
             if p < 10:
                 p = str(p) + " "
             res = res + """
-{}      {}      {}""".format(p, m, r[0])
+   {}    {}  {}""".format(p, m, r[0])
         res = res + "```"
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text=res,
@@ -391,7 +409,7 @@ Pisteet Maksu Nimi
             FROM Maksut
             WHERE nimi = ?
         """
-        cursor.execute(sel1, (names[0],))
+        cursor.execute(sel1, (names[0].lower(),))
         rows = cursor.fetchall()
         if len(rows) == 0:
             apu.botM(update, context,
@@ -402,23 +420,36 @@ Pisteet Maksu Nimi
             SELECT *
             FROM Tapahtumat
             WHERE ukko = ?
-            ORDER BY kuu, pv
+            ORDER BY pvm
         """
-        cursor.execute(sel, (names[0],))
+        cursor.execute(sel, (names[0].lower(),))
         rows = cursor.fetchall()
         conn.close()
         res = """```
 Pelaajan sijoittumiset:
 =======================
-Pvm    Pisteet
+ Pvm  Pisteet
 """
         for r in rows:
-            p = str(r[2])
-            if r[1] < 10:
-                p = p + " "
-            pvm = "{}.{}".format(r[1], p)
+            s = r[1]
+            sta = s[2:]
+            end = s[:2]
+            pre = ''
+            flag = 0
+            if s[0] == '0':
+                end = end[1:]
+                pre = ' '
+                flag = 1
+            if s[2] == '0':
+                sta = sta[1]
+                if flag == 1:
+                    end = end + ' '
+                else:
+                    pre = ' '
+            sta = pre + sta
+            pvm = '.'.join([sta, end])
             res = res + """
-{}   {}""".format(pvm, r[3])
+{}    {}""".format(pvm, r[2])
         res = res + "```"
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text=res,
@@ -449,7 +480,7 @@ Maksu Nimi
         if r[1] == 0:
             m = no
         res = res + """
-{}      {}""".format(m, r[0])
+ {}   {}""".format(m, r[0])
     res = res + "```"
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text=res,
@@ -471,6 +502,7 @@ def poista(update, context):
                  "tietokannasta. Tämä komento poistaa myös kaikki pelaajan"
                  "sijoitukset osakilpailuista.")
     else:
+        name = names[0].lower()
         conn = sqlite3.connect(apu.db_path)
         cursor = conn.cursor()
         sel1 = """
@@ -488,7 +520,7 @@ def poista(update, context):
             FROM Tapahtumat
             WHERE ukko = ?
         """
-        cursor.execute(sel1, (names[0],))
+        cursor.execute(sel1, (name,))
         rows = cursor.fetchall()
         if len(rows) == 0:
             apu.botM(update, context,
@@ -496,8 +528,8 @@ def poista(update, context):
                      "voitu poistaa.")
             conn.close()
             return
-        cursor.execute(del1, (names[0],))
-        cursor.execute(del2, (names[0],))
+        cursor.execute(del1, (name,))
+        cursor.execute(del2, (name,))
         conn.commit()
         conn.close()
         apu.botM(update, context,
@@ -518,6 +550,8 @@ def nimi(update, context):
                  "Anna 1. argumentiksi yhden pelaajan nimi, jonka haluat "
                  "muuttaa ja 2. argumentiksi uusi nimi.")
         return
+    name0 = names[0].lower()
+    name1 = names[1].lower()
     conn = sqlite3.connect(apu.db_path)
     cursor = conn.cursor()
     sel1 = """
@@ -535,7 +569,7 @@ def nimi(update, context):
         SET ukko = ?
         WHERE ukko = ?
     """
-    cursor.execute(sel1, (names[0],))
+    cursor.execute(sel1, (name0,))
     rows = cursor.fetchall()
     if len(rows) == 0:
         apu.botM(update, context,
@@ -543,7 +577,7 @@ def nimi(update, context):
                  "voitu muuttaa.")
         conn.close()
         return
-    cursor.execute(sel1, (names[1],))
+    cursor.execute(sel1, (name1,))
     rows = cursor.fetchall()
     if not len(rows) == 0:
         apu.botM(update, context,
@@ -551,8 +585,8 @@ def nimi(update, context):
                  "parametriksi annettu uusi nimi. Nimeä ei muutettu.")
         conn.close()
         return
-    cursor.execute(upd1, (names[1], names[0]))
-    cursor.execute(upd2, (names[1], names[0]))
+    cursor.execute(upd1, (name1, name0))
+    cursor.execute(upd2, (name1, name0))
     conn.commit()
     conn.close()
     apu.botM(update, context,
@@ -564,8 +598,8 @@ def piste(update, context):
     user = update.effective_user.id
     if not apu.permit(user):
         context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Sinulla ei ole oikeuksia poistaa "
-                                 "henkilöitä tietokannasta")
+                                 text="Sinulla ei ole oikeuksia muuttaa tai "
+                                 "lisätä tuloksia tietokantaan.")
         return
     names = apu.names(context.args)
     if '' in names or not len(names) == 3:
@@ -591,9 +625,10 @@ def piste(update, context):
         apu.botM(update, context,
                  "Anna sijoitus, joka on välillä [1,9].")
         return
-    pv = int(pvm[0])
-    kuu = int(pvm[1])
-    name = names[1]
+    pv = pvm[0]
+    kuu = pvm[1]
+    pvm = apu.fdate(kuu, pv)
+    name = names[1].lower()
     sij = int(names[2])
     p = apu.switch(sij)
     conn = sqlite3.connect(apu.db_path)
@@ -601,37 +636,37 @@ def piste(update, context):
     sel1 = """
         SELECT *
         FROM Tapahtumat
-        WHERE ukko = ? AND pv = ? AND kuu = ?
+        WHERE ukko = ? AND pvm = ?
     """
     sel2 = """
         SELECT *
         FROM Kroket
-        WHERE pv = ? AND kuu = ?
+        WHERE pvm = ?
     """
     upd1 = """
         UPDATE Tapahtumat
         SET pisteet = ?
-        WHERE ukko = ? AND pv = ? AND kuu = ?
+        WHERE ukko = ? AND pvm = ?
     """
     ins1 = """
         INSERT INTO Tapahtumat
-        VALUES(?, ?, ?, ?)
+        VALUES(?, ?, ?)
     """
-    cursor.execute(sel1, (name, pv, kuu))
+    cursor.execute(sel1, (name, pvm))
     rows1 = cursor.fetchall()
-    cursor.execute(sel2, (pv, kuu))
+    cursor.execute(sel2, (pvm,))
     rows2 = cursor.fetchall()
     if len(rows1) == 0 and len(rows2) == 1:
-        cursor.execute(ins1, (name, pv, kuu, p))
+        cursor.execute(ins1, (name, pvm, p))
         conn.commit()
         apu.botM(update, context,
                  "Henkilöllä ei ollut vielä merkintää kyseisen päivän "
                  "osakilpailusta, joten se lisättiin.")
     elif len(rows1) > 0 and len(rows2) == 1:
-        cursor.execute(upd1, (p, name, pv, kuu))
+        cursor.execute(upd1, (p, name, pvm))
         conn.commit()
         apu.botM(update, context,
-                 "Henkilön sijoitus osakilpilussa muutettu onnistuneesti")
+                 "Henkilön sijoitus osakilpailussa muutettu onnistuneesti")
     else:
         apu.botM(update, context,
                  "Kyseiselle päivälle ei ole lisätty osakilpailua. Komennolla "
@@ -647,14 +682,13 @@ def osakilpailut(update, context):
     sel = """
         SELECT *
         FROM Kroket
-        ORDER BY kuu, pv
+        ORDER BY pvm
     """
     cursor.execute(sel)
     rows = cursor.fetchall()
     conn.close()
-    date = update.message.date
-    pv = date.day
-    kuu = date.month
+    now = datetime.now()
+    pvm = now.strftime("%m%d")
     today = emojize(":100:", use_aliases=True)
     old = emojize(":white_check_mark:", use_aliases=True)
     new = emojize(":clock9:", use_aliases=True)
@@ -665,12 +699,13 @@ Tila Pvm
 """
     for r in rows:
         m = old
-        if r[0] == pv and r[1] == kuu:
+        s = r[0]
+        if s == pvm:
             m = today
-        elif r[1] > kuu or (r[1] == kuu and r[0] > pv):
+        elif s > pvm:
             m = new
         res = res + """
-{}      {}.{}""".format(m, r[0], r[1])
+ {}  {}""".format(m, ".".join([s[:2], s[2:]]))
     res = res + "```"
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text=res,

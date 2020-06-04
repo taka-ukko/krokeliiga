@@ -1,7 +1,8 @@
 import sqlite3
 from os import path
-pa = path.dirname(path.abspath(__file__))
 
+
+pa = path.dirname(path.abspath(__file__))
 token_path = path.join(pa, "token.txt")
 perm_path = path.join(pa, "luvat.txt")
 db_path = path.join(pa, "tilastot.db")
@@ -33,16 +34,14 @@ def tables():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Tapahtumat (
         ukko CHAR(64),
-        pv INT,
-        kuu INT,
+        pvm CHAR(4),
         pisteet INT,
-        PRIMARY KEY (ukko, pv, kuu)
+        PRIMARY KEY (ukko, pvm)
     )""")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Kroket (
-        pv INT,
-        kuu INT,
-        PRIMARY KEY (pv, kuu)
+        pvm CHAR(4),
+        PRIMARY KEY (pvm)
     )""")
     conn.commit()
     conn.close()
@@ -76,14 +75,21 @@ def botM(update, context, message: str):
                              text=message)
 
 
-def piste(update, context, name: str, pisteet: int):
+def piste(update, context, name: str, pisteet: int, pvm: str):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     ins = """
         INSERT INTO Tapahtumat
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?)
     """
-    date = update.message.date
-    cursor.execute(ins, (name, date.day, date.month, pisteet))
+    cursor.execute(ins, (name, pvm, pisteet))
     conn.commit()
     conn.close()
+
+
+def fdate(kuu: str, pv: str):
+    if len(pv) == 1:
+        pv = "0" + pv
+    if len(kuu) == 1:
+        kuu = "0" + kuu
+    return kuu + pv
