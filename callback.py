@@ -82,9 +82,8 @@ def help(update, context):
 def uusi(update, context):
     user = update.effective_user.id
     if not apu.permit(user):
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Sinulla ei ole oikeuksia lisätä uusia "
-                                      "henkilöitä tietokantaan")
+        apu.botM(update, context,
+                 "Sinulla ei ole oikeuksia lisätä uusia henkilöitä tietokantaan")
         return
     names = apu.names(context.args)
     if '' in names:
@@ -135,9 +134,8 @@ def uusi(update, context):
 def maksu(update, context):
     user = update.effective_user.id
     if not apu.permit(user):
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Sinulla ei ole oikeuksia muuttaa "
-                                 "pelaajien liigamaksun tilaa.")
+        apu.botM(update, context,
+                 "Sinulla ei ole oikeuksia muuttaa pelaajien liigamaksun tilaa.")
         return
     names = apu.names(context.args)
     if '' in names:
@@ -190,9 +188,8 @@ def maksu(update, context):
 def kroke(update, context):
     user = update.effective_user.id
     if not apu.permit(user):
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Sinulla ei ole oikeuksia lisätä uusia "
-                                      "osakilpailuita.")
+        apu.botM(update, context,
+                 "Sinulla ei ole oikeuksia lisätä uusia osakilpailuita.")
         return
     names = apu.names(context.args)
     sel = """
@@ -254,16 +251,16 @@ def kroke(update, context):
 def sijoitus(update, context):
     user = update.effective_user.id
     if not apu.permit(user):
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Sinulla ei ole oikeuksia lisätä uusia "
-                                 "sijoituksia tietokantaan")
+        apu.botM(update, context,
+                 "Sinulla ei ole oikeuksia lisätä uusia sijoituksia "
+                 "tietokantaan.")
         return
     names = apu.names(context.args)
     if len(names) < 2 or (not names[0].isdigit() and int(names[0]) in range(1, 10)):
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Anna ensimmäisenä parametrinä sijoitus "
-                                 "ja tämän jälkeen henkilöt jotka saavuttivat "
-                                 "kyseisen sijan. Ertota parametrit pilkulla.")
+        apu.botM(update, context,
+                 "Anna ensimmäisenä parametrinä sijoitus ja tämän jälkeen "
+                 "henkilöt jotka saavuttivat kyseisen sijan. Ertota parametrit "
+                 "pilkulla.")
         return
     if '' in names:
         apu.botM(update, context,
@@ -294,10 +291,9 @@ def sijoitus(update, context):
     cursor.execute(sel2, (pvm,))
     rows = cursor.fetchall()
     if len(rows) == 0:
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Tälle päivälle ei ole tallennettu"
-                                 "osakilpailua. Komennolla /kroke voit lisätä"
-                                 "tälle päivälle osakilpailun.")
+        apu.botM(update, context,
+                 "Tälle päivälle ei ole tallennettu osakilpailua. Komennolla "
+                 "/kroke voit lisätä tälle päivälle osakilpailun.")
         conn.close()
         return
     notin = []
@@ -491,9 +487,8 @@ Maksu Nimi
 def poista(update, context):
     user = update.effective_user.id
     if not apu.permit(user):
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Sinulla ei ole oikeuksia poistaa "
-                                 "henkilöitä tietokannasta")
+        apu.botM(update, context,
+                 "Sinulla ei ole oikeuksia poistaa henkilöitä tietokannasta")
         return
     names = apu.names(context.args)
     if names[0] == '' or len(names) > 1:
@@ -540,9 +535,8 @@ def poista(update, context):
 def nimi(update, context):
     user = update.effective_user.id
     if not apu.permit(user):
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Sinulla ei ole oikeuksia "
-                                 "muuttaapelaajien nimiä")
+        apu.botM(update, context,
+                 "Sinulla ei ole oikeuksia muuttaapelaajien nimiä.")
         return
     names = apu.names(context.args)
     if '' in names or not len(names) == 2:
@@ -597,9 +591,9 @@ def nimi(update, context):
 def piste(update, context):
     user = update.effective_user.id
     if not apu.permit(user):
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text="Sinulla ei ole oikeuksia muuttaa tai "
-                                 "lisätä tuloksia tietokantaan.")
+        apu.botM(update, context,
+                 "Sinulla ei ole oikeuksia muuttaa tai lisätä tuloksia "
+                 "tietokantaan.")
         return
     names = apu.names(context.args)
     if '' in names or not len(names) == 3:
