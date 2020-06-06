@@ -3,6 +3,9 @@ import logging
 import apu
 from callback import (start, uusi, maksu, sijoitus, kroke, help, tulokset,
                       pelaajat, poista, joukkueet, nimi, piste, osakilpailut)
+from os import getenv
+
+token = getenv("KROKE_BOT")
 
 logging.basicConfig(format="""%(asctime)s - %(name)s - %(levelname)s -
                     %(message)s""",
@@ -11,7 +14,7 @@ logging.basicConfig(format="""%(asctime)s - %(name)s - %(levelname)s -
 
 def main():
     apu.tables()
-    updater = Updater(token=apu.get_token(), use_context=True)
+    updater = Updater(token, use_context=True)
     dispatcher = updater.dispatcher
     # handlers
     start_handler = CommandHandler('start', start)

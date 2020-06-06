@@ -1,11 +1,23 @@
 import sqlite3
 from os import path
+import urllib.request
 
 
 pa = path.dirname(path.abspath(__file__))
-token_path = path.join(pa, "token.txt")
 perm_path = path.join(pa, "luvat.txt")
 db_path = path.join(pa, "tilastot.db")
+
+
+def check_internet():
+    url = "http://www.google.com/"
+    timeout = 5
+    try:
+        urllib.request.urlopen(url, timeout=timeout)
+        print("Connection succesful")
+        return True
+    except (urllib.error.URLError):
+        print("No internet connection")
+        return False
 
 
 def permit(id: int):
@@ -14,12 +26,6 @@ def permit(id: int):
             return True
         else:
             return False
-
-
-def get_token():
-    with open(token_path, 'r') as token_file:
-        token = token_file.readlines()[0].strip(" \n")
-    return token
 
 
 def tables():
