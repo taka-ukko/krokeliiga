@@ -6,3 +6,6 @@
 
 # ignore pycache folder
 __pycache__
+
+# ignore logging files
+*.log
