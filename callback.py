@@ -4,10 +4,19 @@ import telegram
 from emoji import emojize
 import random
 from datetime import datetime
+from logg import Logger
+
+logger = Logger(apu.log_path).logger
 
 
 # -----------------------------------START--------------------------------------
 def start(update, context):
+    user = update.effective_user.id
+    if apu.permit(user):
+        logger.info(user.full_name + " started the bot and has editing "
+                    "permission.")
+    else:
+        logger.info(user.full_name + " started the bot.")
     apu.botM(update, context,
              "Olen botti, joka ylläpitää konklaavin kesäliigan tietokantaa. "
              "/help komennolla saat listauksen käytössä olevista komennoista.")

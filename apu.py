@@ -6,6 +6,7 @@ import urllib.request
 pa = path.dirname(path.abspath(__file__))
 perm_path = path.join(pa, "files", "luvat.txt")
 db_path = path.join(pa, "files", "tilastot.db")
+log_path = path.join(pa, "files", "krokebot.log")
 
 
 def check_internet():
