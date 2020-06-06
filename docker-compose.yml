@@ -1,0 +1,8 @@
+version: '3'
+services:
+  krokeliigabot:
+    build: .
+    volumes:
+      - ${DATABASE}:/bot/files:rw
+    environment:
+      - KROKE_BOT=${KROKE_BOT}

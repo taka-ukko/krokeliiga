@@ -12,3 +12,7 @@ __pycache__
 
 # ignore logging files
 *.log
+
+# ignore folders by pycharm
+.idea
+
