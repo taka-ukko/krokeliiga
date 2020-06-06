@@ -123,6 +123,7 @@ def uusi(update, context):
         else:
             notadded.append(name)
             cursor.execute(ins, (name, 0))
+    logger.info(update.effective_user.full_name + " added a new player.")
     if len(added) == 0:
         conn.commit()
         apu.botM(update, context,
@@ -179,6 +180,8 @@ def maksu(update, context):
         cursor.execute(upd, (name,))
     conn.commit()
     conn.close()
+    logger.info(update.effective_user.full_name + " updated the payment status "
+                "of a player.")
     if len(notadded) == 0:
         apu.botM(update, context,
                  "Maksu päivitetty onnistuneesti pelaajille.")
@@ -196,7 +199,7 @@ def maksu(update, context):
 # -----------------------------------KROKE--------------------------------------
 def kroke(update, context):
     user = update.effective_user.id
-    if not apu.permit(user):
+    if not user == 648172340:
         apu.botM(update, context,
                  "Sinulla ei ole oikeuksia lisätä uusia osakilpailuita.")
         return
@@ -250,6 +253,7 @@ def kroke(update, context):
             apu.botM(update, context,
                      "Osakilpailu lisätty tietokantaan.")
             conn.commit()
+            logger.info(update.effective_user.full_name + " added a new playday.")
         else:
             apu.botM(update, context,
                      "Osakilpailu on jo tietokannassa.")
@@ -329,6 +333,7 @@ def sijoitus(update, context):
             added.append(name)
         else:
             notadded.append(name)
+    logger.info(update.effective_user.full_name + " added placements to players.")
     conn.close()
     if len(notadded) == 0:
         apu.botM(update, context,
@@ -536,6 +541,7 @@ def poista(update, context):
         cursor.execute(del2, (name,))
         conn.commit()
         conn.close()
+        logger.info(update.effective_user.full_name + " deleted a player.")
         apu.botM(update, context,
                  "Pelaaja poistettu tietokannasta.")
 
@@ -592,6 +598,8 @@ def nimi(update, context):
     cursor.execute(upd2, (name1, name0))
     conn.commit()
     conn.close()
+    logger.info(update.effective_user.full_name + " changed the name of a "
+                "player.")
     apu.botM(update, context,
              "Pelaajan nimi muutettu.")
 
@@ -662,12 +670,16 @@ def piste(update, context):
     if len(rows1) == 0 and len(rows2) == 1:
         cursor.execute(ins1, (name, pvm, p))
         conn.commit()
+        logger.info(update.effective_user.full_name + " added a placement for a "
+                    "player in a competition.")
         apu.botM(update, context,
                  "Henkilöllä ei ollut vielä merkintää kyseisen päivän "
                  "osakilpailusta, joten se lisättiin.")
     elif len(rows1) > 0 and len(rows2) == 1:
         cursor.execute(upd1, (p, name, pvm))
         conn.commit()
+        logger.info(update.effective_user.full_name + " changed the result of a "
+                    "player in a single competition.")
         apu.botM(update, context,
                  "Henkilön sijoitus osakilpailussa muutettu onnistuneesti")
     else:
