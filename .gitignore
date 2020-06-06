@@ -1,8 +1,11 @@
 # ignore database files
 *.db
 
-# ignore txt-files
+# ignore .txt files
 *.txt
+
+# except requirements.txt
+!requirements.txt
 
 # ignore pycache folder
 __pycache__
