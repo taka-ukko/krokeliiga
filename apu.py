@@ -11,9 +11,8 @@ log_path = path.join(pa, "files", "krokebot.log")
 
 def check_internet():
     url = "http://www.google.com/"
-    timeout = 5
     try:
-        urllib.request.urlopen(url, timeout=timeout)
+        urllib.request.urlopen(url)
         print("Connection succesful")
         return True
     except (urllib.error.URLError):

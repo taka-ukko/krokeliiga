@@ -4,6 +4,7 @@ import apu
 from callback import (start, uusi, maksu, sijoitus, kroke, help, tulokset,
                       pelaajat, poista, joukkueet, nimi, piste, osakilpailut)
 from os import getenv
+import time
 
 token = getenv("KROKE_BOT")
 
@@ -14,7 +15,12 @@ logging.basicConfig(format="""%(asctime)s - %(name)s - %(levelname)s -
 
 
 def main():
+    print("Waiting for internet connection")
+    while not apu.check_internet():
+        time.sleep(5)
+
     apu.tables()
+
     updater = Updater(token, use_context=True)
     dispatcher = updater.dispatcher
     # handlers
