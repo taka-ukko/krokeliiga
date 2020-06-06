@@ -1,17 +1,12 @@
 from telegram.ext import (Updater, CommandHandler)
-import logging
 import apu
 from callback import (start, uusi, maksu, sijoitus, kroke, help, tulokset,
-                      pelaajat, poista, joukkueet, nimi, piste, osakilpailut)
+                      pelaajat, poista, joukkueet, nimi, piste, osakilpailut,
+                      error)
 from os import getenv
 import time
 
 token = getenv("KROKE_BOT")
-
-
-logging.basicConfig(format="""%(asctime)s - %(name)s - %(levelname)s -
-                    %(message)s""",
-                    level=logging.INFO)
 
 
 def main():
@@ -51,6 +46,7 @@ def main():
     dispatcher.add_handler(nimi_handler)
     dispatcher.add_handler(piste_handler)
     dispatcher.add_handler(osa_handler)
+    dispatcher.add_error_handler(error)
     updater.start_polling()
     updater.idle()
 

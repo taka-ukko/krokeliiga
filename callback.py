@@ -13,10 +13,10 @@ logger = Logger(apu.log_path).logger
 def start(update, context):
     user = update.effective_user.id
     if apu.permit(user):
-        logger.info(user.full_name + " started the bot and has editing "
-                    "permission.")
+        logger.info(update.effective_user.full_name + " started the bot and "
+                    "has editing permission.")
     else:
-        logger.info(user.full_name + " started the bot.")
+        logger.info(update.effective_user.full_name + " started the bot.")
     apu.botM(update, context,
              "Olen botti, joka ylläpitää konklaavin kesäliigan tietokantaa. "
              "/help komennolla saat listauksen käytössä olevista komennoista.")
@@ -745,3 +745,9 @@ Joukkueet:"""
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text=res,
                              parse_mode=telegram.ParseMode.MARKDOWN)
+
+
+# -----------------------------------ERROR--------------------------------------
+def error(update, context):
+    """Log Errors caused by Updates."""
+    logger.warning('Update "%s" caused error "%s"', update, context.error)
