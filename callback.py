@@ -385,7 +385,7 @@ def tulokset(update, context):
                 WHERE nimi = a.ukko
             )
             GROUP BY nimi
-            ORDER BY -min(pisteet)
+            ORDER BY -min(pisteet), -maksu, nimi
             LIMIT 10
         """
         cursor.execute(sel)
@@ -720,7 +720,7 @@ Tila Pvm
         elif s > pvm:
             m = new
         res = res + """
- {}  {}""".format(m, ".".join([s[:2], s[2:]]))
+ {}  {}""".format(m, ".".join([s[2:4], s[0:2]]))
     res = res + "```"
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text=res,
