@@ -47,6 +47,7 @@ def tables():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Kroket (
         pvm CHAR(4),
+        nimi CHAR(64),
         PRIMARY KEY (pvm)
     )""")
     conn.commit()
