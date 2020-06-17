@@ -2,7 +2,6 @@ import sqlite3
 from os import path
 import urllib.request
 
-
 pa = path.dirname(path.abspath(__file__))
 perm_path = path.join(pa, "files", "luvat.txt")
 db_path = path.join(pa, "files", "tilastot.db")
@@ -60,21 +59,6 @@ def names(args: list):
     for i in range(len(names)):
         names[i] = names[i].strip()
     return names
-
-
-def switch(placement: int):
-    switcher = {
-        1: 4,
-        2: 3,
-        3: 2,
-        4: 1,
-        5: 1,
-        6: 1,
-        7: 1,
-        8: 1,
-        9: 1,
-    }
-    return switcher.get(placement)
 
 
 def botM(update, context, message: str):

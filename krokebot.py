@@ -1,8 +1,8 @@
 from telegram.ext import (Updater, CommandHandler)
 import apu
-from callback import (start, uusi, maksu, sijoitus, kroke, help, tulokset,
-                      pelaajat, poista, joukkueet, nimi, piste, osakilpailut,
-                      error, delete)
+from callback import (start, help, tulokset, pelaajat, joukkueet, osakilpailut)
+from callback_admin import (uusi, maksu, pisteet, poista, nimi, piste)
+from callback_super_admin import (kroke, error, delete)
 from os import getenv
 import time
 
@@ -26,7 +26,7 @@ def main():
     uusi_handler = CommandHandler('uusi', uusi)
     maksu_handler = CommandHandler('maksu', maksu)
     kroke_handler = CommandHandler('kroke', kroke)
-    sij_handler = CommandHandler("sijoitus", sijoitus)
+    sij_handler = CommandHandler("pisteet", pisteet)
     tul_handler = CommandHandler("tulokset", tulokset)
     pel_handler = CommandHandler("pelaajat", pelaajat)
     poista_handler = CommandHandler("poista", poista)
