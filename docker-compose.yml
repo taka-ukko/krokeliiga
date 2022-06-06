@@ -2,6 +2,8 @@ version: '3'
 services:
   krokeliigabot:
     build: .
+    image: krokeliiga
+    container_name: krokeliiga    
     volumes:
       - ${DATABASE}:/bot/files:rw
     environment:

@@ -8,7 +8,7 @@ logger = Logger(apu.log_path).logger
 # -----------------------------------KROKE--------------------------------------
 def kroke(update, context):
     user = update.effective_user.id
-    if not user == 648172340:
+    if not user == 21607043:
         apu.botM(update, context,
                  "Sinulla ei ole oikeuksia lisätä uusia osakilpailuita.")
         return
@@ -71,7 +71,7 @@ def kroke(update, context):
 # -----------------------------------DELETE-------------------------------------
 def delete(update, context):
     user = update.effective_user.id
-    if not user == 648172340:
+    if not user == 21607043:
         apu.botM(update, context,
                  "Sinulla ei ole oikeuksia poistaa osakilpailuita.")
         return
