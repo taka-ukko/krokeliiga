@@ -111,7 +111,6 @@ def tulokset(update, context):
                       WHERE nimi = ukko
                       GROUP BY nimi
                       ORDER BY -SUM(pisteet)
-                      LIMIT 10
                       )
                     UNION
                 SELECT DISTINCT a.ukko, maksu, pisteet
@@ -129,7 +128,6 @@ def tulokset(update, context):
             )
             GROUP BY nimi
             ORDER BY -min(pisteet), -maksu, nimi
-            LIMIT 10
         """
         cursor.execute(sel)
         rows = cursor.fetchall()

@@ -19,7 +19,6 @@ def main():
     updater = Updater(token, use_context=True)
     dispatcher = updater.dispatcher
     bot = dispatcher.bot
-    bot.send_message(chat_id=-485426871, text="Käynnistyin :D")
     # handlers
     start_handler = CommandHandler('start', start)
     help_handler = CommandHandler("help", help)
